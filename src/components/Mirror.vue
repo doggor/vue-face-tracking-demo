@@ -1,8 +1,8 @@
 <template>
     <div id="mirror">
         <div id="videoContainer" :style="videoContainerStyle">
-            <video id="videoEle" ref="videoEle" :width="camMeta.width" :height="camMeta.height"></video>
-            <canvas id="canvasEle" ref="canvasEle" :width="camMeta.width" :height="camMeta.height"></canvas>
+            <video id="videoEle" ref="videoEle" :width="video.preferWidth" :height="video.preferHeight"></video>
+            <canvas id="canvasEle" ref="canvasEle" :width="video.preferWidth" :height="video.preferHeight"></canvas>
             <div id="scanningLiner" v-if="!deviceNotSupport && !faceDetected"></div>
             <transition name="fade">
                 <div class="message-box" v-if="errorMessage">
@@ -56,6 +56,10 @@ export default {
                 width: Math.min(window.innerWidth, 500),
                 height: Math.min(window.innerHeight, 500),
             },
+            video: {
+                preferWidth: Math.min(window.innerWidth, 500),
+                preferHeight: Math.min(window.innerHeight, 500),
+            },
             // toggles and models
             shouldDrawModelLines: false,
             lipsColor: 'rgba(0, 0, 255, .4)',
@@ -72,8 +76,8 @@ export default {
     computed: {
         videoContainerStyle() {
             return {
-                width: `${this.camMeta.width}px`,
-                height: `${this.camMeta.height}px`,
+                width: `${this.video.preferWidth}px`,
+                height: `${this.video.preferHeight}px`,
             }
         },
     },
@@ -107,6 +111,8 @@ export default {
                         const { width, height } = tracks[0].getSettings()
                         this.camMeta.width = width
                         this.camMeta.height = height
+                        this.video.preferWidth = Math.min(width, window.innerWidth)
+                        this.video.preferHeight = Math.min(height, window.innerHeight)
                     }
                     // start streaming
                     videoEle.play()
