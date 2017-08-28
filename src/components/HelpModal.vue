@@ -7,7 +7,7 @@
                     FaceUP is a simple facial features tracker that demonstrates the use of cutting-edge web technologies.
                 </p>
                 <p>
-                    WIth the API limitation of different browsers, it currently works only on the following versions:
+                    It currently works only on the following browsers:
                     <ul>
                         <li>Chrome 53+</li>
                         <li>Firefox 38+</li>
@@ -18,6 +18,7 @@
                         <li>Opera Mobile 40+</li>
                     </ul>
                 </p>
+                <p>Due to the limitations of vary hardwares and softwares, you are suggested to try it on Chrome for better performance.</p>
             </div>
         </div>
     </transition>
@@ -78,7 +79,6 @@ export default {
     max-width: 500px;
     max-height: 500px;
     width: 100%;
-    height: 100%;
     background-color: rgba(255, 255, 255, .9);
     color: #444;
     border-radius: 8px;

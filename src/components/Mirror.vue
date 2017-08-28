@@ -1,8 +1,8 @@
 <template>
     <div id="mirror">
         <div id="videoContainer" :style="videoContainerStyle">
-            <video id="videoEle" ref="videoEle" :width="video.preferWidth" :height="video.preferHeight"></video>
-            <canvas id="canvasEle" ref="canvasEle" :width="video.preferWidth" :height="video.preferHeight"></canvas>
+            <video id="videoEle" ref="videoEle" :width="this.camMeta.width" :height="this.camMeta.height"></video>
+            <canvas id="canvasEle" ref="canvasEle" :width="this.camMeta.width" :height="this.camMeta.height"></canvas>
             <div id="scanningLiner" v-if="!deviceNotSupport && !faceDetected"></div>
             <transition name="fade">
                 <div class="message-box" v-if="errorMessage">
@@ -221,6 +221,7 @@ export default {
 
 #videoContainer {
     position: relative;
+    overflow: hidden;
 }
 
 #videoEle,
