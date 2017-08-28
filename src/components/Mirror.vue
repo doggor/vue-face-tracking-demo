@@ -1,13 +1,15 @@
 <template>
-    <div id="mirror" :style="mirrorStyle">
-        <video id="videoEle" ref="videoEle" :width="mirrorWidth" :height="mirrorHeight"></video>
-        <canvas id="canvasEle" ref="canvasEle" :width="mirrorWidth" :height="mirrorHeight"></canvas>
-        <div id="scanningLiner" v-if="!deviceNotSupport && !faceDetected"></div>
-        <transition name="fade">
-            <div class="message-box" v-if="errorMessage">
-                <span id="deviceUnsupportMessage" class="message">{{errorMessage}}</span>
-            </div>
-        </transition>
+    <div id="mirror">
+        <div id="videoContainer" :style="videoContainerStyle">
+            <video id="videoEle" ref="videoEle" :width="camMeta.width" :height="camMeta.height"></video>
+            <canvas id="canvasEle" ref="canvasEle" :width="camMeta.width" :height="camMeta.height"></canvas>
+            <div id="scanningLiner" v-if="!deviceNotSupport && !faceDetected"></div>
+            <transition name="fade">
+                <div class="message-box" v-if="errorMessage">
+                    <span id="deviceUnsupportMessage" class="message">{{errorMessage}}</span>
+                </div>
+            </transition>
+        </div>
         <div id="controlContainer">
             <div class="control float-right">
                 <button id="resetTrackBtn" @click="resetTrack">Re-Scan</button>
@@ -50,12 +52,9 @@ export default {
     data() {
         return {
             // parameters
-            mirrorWidth: Math.min(window.innerWidth, 500), // should change along with the screen
-            mirrorHeight: window.innerHeight, // should change along with the screen
-            camMeta: { // the camera spec, initialized by calling retrieveCameraMeta
-                width: 0,
-                height: 0,
-                frameRate: 0,
+            camMeta: { // the camera spec, initialized by calling startVideo()
+                width: Math.min(window.innerWidth, 500),
+                height: Math.min(window.innerHeight, 500),
             },
             // toggles and models
             shouldDrawModelLines: false,
@@ -67,17 +66,14 @@ export default {
             cameraAccessDenied: false, // if user deny access to camera
             faceDetected: false, // if face detected by tracker
             // references
-            videoStraam: null,
             ctracker: null,
-            windowSizingListener: null,
-            restartVideoTimerId: null,
         }
     },
     computed: {
-        mirrorStyle() {
+        videoContainerStyle() {
             return {
-                width: `${this.mirrorWidth}px`,
-                height: `${this.mirrorHeight}px`,
+                width: `${this.camMeta.width}px`,
+                height: `${this.camMeta.height}px`,
             }
         },
     },
@@ -89,53 +85,39 @@ export default {
             }
             return true
         },
-        async retrieveCameraMeta(facingMode = 'user') { // get camera info
-            let stream = null
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode,
-                    }
-                })
-                const tracks = stream.getVideoTracks()
-                if (tracks.length === 0) {
-                    return null
-                }
-                const { width, height, frameRate } = tracks[0].getSettings()
-                this.camMeta.width = width
-                this.camMeta.height = height
-                this.camMeta.frameRate = frameRate
-                return this.camMeta
-            }
-            finally {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop())
-                }
-            }
-        },
         async startVideo() {
             const videoEle = this.$refs.videoEle
             // bind front camera to video DOM
-            this.videoStream = await navigator.mediaDevices.getUserMedia({
+            const videoStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'user',
-                    width: {
-                        ideal: Math.min(this.mirrorWidth * this.camMeta.height / this.mirrorHeight, this.mirrorWidth),
-                    },
-                    height: {
-                        ideal: Math.min(this.camMeta.height, this.mirrorHeight),
-                    },
                     frameRate: {
-                        ideal: Math.min(this.camMeta.frameRate, 15),
+                        ideal: 15,
                     },
                 },
             })
-            videoEle.srcObject = this.videoStream
+            videoEle.srcObject = videoStream
+
+            // resolve when video get ready
+            return new Promise(resolve => {
+                videoEle.onloadedmetadata = () => {
+                    // retrieve camera width and height
+                    const tracks = videoStream.getVideoTracks()
+                    if (tracks.length > 0) {
+                        const { width, height } = tracks[0].getSettings()
+                        this.camMeta.width = width
+                        this.camMeta.height = height
+                    }
+                    // start streaming
+                    videoEle.play()
+                    // return
+                    resolve()
+                }
+            })
         },
         stopVideo() {
-            if (this.videoStream) {
-                this.videoStream.getTracks().forEach(track => track.stop())
-                this.videoStream = null
+            if (this.$refs.videoEle.srcObject) {
+                this.$refs.videoEle.srcObject.getTracks().forEach(track => track.stop())
                 this.$refs.videoEle.srcObject = null
             }
         },
@@ -153,7 +135,7 @@ export default {
             const drawLoop = () => {
                 // run only when ctracker not yet removed
                 if (this.ctracker) {
-                    paint.clearRect(0, 0, this.mirrorWidth, this.mirrorHeight)
+                    paint.clearRect(0, 0, this.camMeta.width, this.camMeta.height)
                     const modelPositions = this.ctracker.getCurrentPosition()
                     if (modelPositions) {
                         // render only when face detected && fitting score in certain level
@@ -194,31 +176,6 @@ export default {
             this.cameraAccessDenied = true
             this.showErrorMsg('Camera Access Denied.')
         },
-        adjustSizeOnWindowSizeChanged() {
-            // re-calculate size
-            this.mirrorWidth = Math.min(window.innerWidth, 500)
-            this.mirrorHeight = window.innerHeight
-            // restart video tracking 1s later
-            if (this.isDeviceSupport()) {
-                this.stopTrack()
-                this.stopVideo()
-                if (this.restartVideoTimerId) {
-                    clearTimeout(this.restartVideoTimerId)
-                }
-                // restart tracking 1s after the last sizing
-                this.$nextTick(() => {
-                    this.restartVideoTimerId = setTimeout(async () => {
-                        try {
-                            await this.startVideo()
-                            this.startTrack()
-                        }
-                        catch (err) {
-                            this.handleCameraAccessError(err)
-                        }
-                    }, 1000)
-                })
-            }
-        },
         showErrorMsg(message) {
             this.errorMessage = message
         }
@@ -227,7 +184,6 @@ export default {
         // check if device support
         if (this.isDeviceSupport()) {
             try {
-                await this.retrieveCameraMeta()
                 await this.startVideo()
                 this.startTrack()
             }
@@ -238,14 +194,8 @@ export default {
         else {
             this.showErrorMsg('This browser is not modern enough. Please try latest Chrome or Firefox.')
         }
-
-        // bind window screen size
-        this.windowSizingListener = () => this.adjustSizeOnWindowSizeChanged()
-        window.addEventListener('resize', this.windowSizingListener)
     },
     beforeDestroy() {
-        // unbind window sizing listener
-        window.removeEventListener('resize', this.windowSizingListener)
         this.stopTrack()
         this.stopVideo()
     }
@@ -261,6 +211,10 @@ export default {
     max-width: 500px;
     overflow: hidden;
     background-color: black;
+}
+
+#videoContainer {
+    position: relative;
 }
 
 #videoEle,
@@ -311,11 +265,6 @@ export default {
 }
 
 #controlContainer {
-    position: absolute;
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
     height: 8rem;
     background-color: rgba(255, 255, 255, .7);
 }

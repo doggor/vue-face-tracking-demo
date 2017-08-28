@@ -1,8 +1,6 @@
 <template>
     <div id="home">
-        <div class="mirror-container">
-            <Mirror></Mirror>
-        </div>
+        <Mirror></Mirror>
     </div>
 </template>
 
@@ -18,10 +16,15 @@ export default {
 
 <style>
 #home {
-    position: relative;
-}
-
-.mirror-container {
-    border-radius: 10px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: black;
+    background: linear-gradient(to bottom right, #000, #aaa);
 }
 </style>

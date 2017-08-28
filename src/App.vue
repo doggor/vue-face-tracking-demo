@@ -20,8 +20,6 @@ export default {
 body {
     box-sizing: border-box;
     margin: 0;
-    background-color: black;
-    background: linear-gradient(to bottom right, #000, #aaa);
 }
 
 #app {
