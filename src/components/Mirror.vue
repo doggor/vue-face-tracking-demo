@@ -1,8 +1,8 @@
 <template>
-    <div id="mirror">
+    <div id="mirror" ref="mirror">
         <div id="videoContainer" :style="videoContainerStyle">
-            <video id="videoEle" ref="videoEle" :width="this.camMeta.width" :height="this.camMeta.height"></video>
-            <canvas id="canvasEle" ref="canvasEle" :width="this.camMeta.width" :height="this.camMeta.height"></canvas>
+            <video id="videoEle" ref="videoEle" :width="this.camMeta.width" :height="this.camMeta.height" :style="videoStyle"></video>
+            <canvas id="canvasEle" ref="canvasEle" :width="this.camMeta.width" :height="this.camMeta.height" :style="videoStyle"></canvas>
             <div id="scanningLiner" v-if="!deviceNotSupport && !faceDetected"></div>
             <transition name="fade">
                 <div class="message-box" v-if="errorMessage">
@@ -80,6 +80,11 @@ export default {
                 height: `${this.video.preferHeight}px`,
             }
         },
+        videoStyle() {
+            return { // align the video to center, Horizontal flip
+                transform: `translateX(-${Math.max((this.camMeta.width - this.video.preferWidth) / 2, 0)}px) rotateY(180deg)`,
+            }
+        },
     },
     methods: {
         isDeviceSupport() { // check if required API supported in browser
@@ -111,8 +116,8 @@ export default {
                         const { width, height } = tracks[0].getSettings()
                         this.camMeta.width = width
                         this.camMeta.height = height
-                        this.video.preferWidth = Math.min(width, window.innerWidth)
-                        this.video.preferHeight = Math.min(height, window.innerHeight)
+                        this.video.preferWidth = Math.min(width, window.innerWidth, 500)
+                        this.video.preferHeight = Math.min(height, window.innerHeight, 500)
                     }
                     // start streaming
                     videoEle.play()
