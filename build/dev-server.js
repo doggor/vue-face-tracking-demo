@@ -89,3 +89,12 @@ module.exports = {
     server.close()
   }
 }
+
+//launch https server with self-signed ssl
+var fs = require("fs")
+require('https').createServer({
+    key: fs.readFileSync('./dev/self-signed.key').toString(),
+    cert: fs.readFileSync('./dev/self-signed.crt').toString(),
+}, app).listen(4433, () => {
+    console.log(`dev server also start at port 4433 for remote debugging.`)
+})
