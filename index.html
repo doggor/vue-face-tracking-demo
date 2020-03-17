@@ -22,7 +22,7 @@
     <meta name="msapplication-TileImage" content="<%= htmlWebpackPlugin.files.publicPath %>static/img/icons/msapplication-icon-144x144.png">
     <meta name="msapplication-TileColor" content="#000000">
     <script src="https://webrtc.github.io/adapter/adapter-4.2.2.js"></script>
-    <script src="/static/js/clmtrackr.min.js"></script>
+    <script src="<%= htmlWebpackPlugin.files.publicPath %>/static/js/clmtrackr.min.js"></script>
     <% for (var chunk of webpack.chunks) {
         for (var file of chunk.files) {
           if (file.match(/\.(js|css)$/)) { %>
